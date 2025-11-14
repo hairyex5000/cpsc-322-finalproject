@@ -1,4 +1,3 @@
-from mysklearn import myutils
 import copy
 import csv
 from tabulate import tabulate

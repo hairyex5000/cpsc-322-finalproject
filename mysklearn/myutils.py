@@ -1,6 +1,7 @@
 import numpy as np
 from tabulate import tabulate
 from mysklearn import myevaluation
+from mysklearn.mypytable import MyPyTable
 
 
 def randomize_in_place(alist, parallel_list=None):
@@ -46,38 +47,6 @@ def euclidean_distance(a: list, b: list) -> float:
     )
 
 
-def discretize_mpg_doe(mpg: float) -> str:
-    """
-    Discretizes a given miles-per-gallon (mpg) value into categorical bins according to Department of Energy standards.
-
-    Parameters:
-        mpg (float): The miles-per-gallon value to discretize.
-
-    Returns:
-        str: A string representing the discrete bin label ("1" through "10").
-    """
-    if mpg <= 13:
-        return "1"
-    elif mpg <= 14:
-        return "2"
-    elif mpg <= 16:
-        return "3"
-    elif mpg <= 19:
-        return "4"
-    elif mpg <= 23:
-        return "5"
-    elif mpg <= 26:
-        return "6"
-    elif mpg <= 30:
-        return "7"
-    elif mpg <= 36:
-        return "8"
-    elif mpg <= 44:
-        return "9"
-    else:
-        return "10"
-
-
 def normalize_list(raw: list) -> list[float]:
     """
     Normalizes a list of numerical values to the range [0, 1].
@@ -118,3 +87,47 @@ def pretty_confusion_matrix(y_true, y_pred, labels):
 
     print("Confusion Matrix")
     print(tabulate(matrix, headers=labels, showindex=labels))
+
+
+def onehot_to_categorical(table: MyPyTable, classes: list[str]) -> MyPyTable:
+    """
+    Convert a table with one-hot encoded class columns into a table with a single categorical "Class" column.
+
+    Args:
+        table (MyPyTable): Source table.
+        classes (list[str]): List of column names in `table.column_names` that represent one-hot
+                    encoded classes.
+
+    Returns:
+        MyPyTable: A new table containing the preserved non-class columns and a single appended
+        "Class" column containing the name of the active class for each row (when found).
+
+    Notes:
+        Assumes that all classes exist in the table and are at the right-most columns
+    """
+    out = MyPyTable()
+    class_i = [table.column_names.index(v) for v in classes]
+
+    # Determine new columns
+    for c in table.column_names:
+        if c not in classes:
+            out.column_names.append(c)
+
+    out.column_names.append("Class")
+
+    for row in table.data:
+        new = []
+
+        # For each column
+        for i in range(len(row)):
+            if i not in class_i:
+                new.append(row[i])
+                continue
+
+            if row[i] == 1:
+                new.append(table.column_names[i])
+                break
+
+        out.data.append(new)
+
+    return out
