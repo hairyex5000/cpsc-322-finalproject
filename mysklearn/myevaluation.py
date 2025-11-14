@@ -1,3 +1,4 @@
+import random
 import numpy as np  # use numpy's random number generation
 from mysklearn import myutils
 
@@ -99,6 +100,58 @@ def kfold_split(X, n_splits=5, random_state=None, shuffle=False):
 
     return folds
 
+def stratified_kfold_split(X, y, n_splits=5, random_state=None, shuffle=False):
+    """Split dataset into stratified cross validation folds.
+
+    Args:
+        X(list of list of obj): The list of instances (samples).
+            The shape of X is (n_samples, n_features)
+        y(list of obj): The target y values (parallel to X).
+            The shape of y is n_samples
+        n_splits(int): Number of folds.
+        random_state(int): integer used for seeding a random number generator for reproducible results
+        shuffle(bool): whether or not to randomize the order of the instances before creating folds
+
+    Returns:
+        folds(list of 2-item tuples): The list of folds where each fold is defined as a 2-item tuple
+            The first item in the tuple is the list of training set indices for the fold
+            The second item in the tuple is the list of testing set indices for the fold
+
+    Notes:
+        Loosely based on sklearn's StratifiedKFold split():
+            https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedKFold.html#sklearn.model_selection.StratifiedKFold
+    """
+    x_len = len(X)
+    to_map = {k: k for k in range(x_len)}
+    if shuffle:
+        random.seed(random_state)
+        tmp_idx = []
+        while len(tmp_idx) < x_len:
+            tmp_rand = random.randint(0, x_len-1)
+            if tmp_rand not in tmp_idx:
+                tmp_idx.append(tmp_rand)
+        to_map = {k: tmp_idx[k] for k in range(x_len)}
+
+    tmp_dist = {}
+    for index in range(len(y)): # pylint: disable=consider-using-enumerate
+        if y[index] in tmp_dist:
+            tmp_dist[y[index]].append(to_map[index])
+        else:
+            tmp_dist[y[index]] = [to_map[index]]
+    tmp_fold = [[] for x in range(n_splits)]
+    for class_name in list(sorted(tmp_dist.keys(), key=lambda x: tmp_dist[x])):
+        i = 0
+        while len(tmp_dist[class_name]) > 0:
+            tmp_fold[i%n_splits].append(tmp_dist[class_name].pop(-1))
+            i+=1
+    to_return = []
+    for fold_index in range(n_splits):
+        tmp_train = []
+        for fold in (tmp_fold[0:fold_index] + tmp_fold[fold_index+1:]):
+            for index in fold:
+                tmp_train.append(index)
+        to_return.append((tmp_train, tmp_fold[fold_index]))
+    return to_return
 
 def bootstrap_sample(X, y=None, n_samples=None, random_state=None):
     """Split dataset into bootstrapped training set and out of bag test set.
