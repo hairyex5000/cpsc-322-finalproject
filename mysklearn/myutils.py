@@ -1,4 +1,6 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 from tabulate import tabulate
 from mysklearn import myevaluation
 from mysklearn.mypytable import MyPyTable
@@ -131,3 +133,39 @@ def onehot_to_categorical(table: MyPyTable, classes: list[str]) -> MyPyTable:
         out.data.append(new)
 
     return out
+
+
+def group_by(table: MyPyTable, group_by_col: str) -> dict:
+    """
+    Group rows of a MyPyTable by the value in a specified column.
+
+    Args:
+        table (MyPyTable): Source table
+        group_by_col (str): Name of column to group by. Must exist in table.
+
+    Returns:
+        dict: A dictionary mapping each distinct value found in the specified column to a list
+        of rows that have that value.
+    """
+    out = {}
+    col_index = table.column_names.index(group_by_col)
+
+    for row in table.data:
+        key = row[col_index]
+        if key in out:
+            out[key].append(row.copy())
+        else:
+            out[key] = [row]
+
+    return out
+
+
+def eda_group_data_by_class(table: MyPyTable, interest_col: str):
+    interest_i = table.column_names.index(interest_col)
+    grouped = group_by(table, "Class")
+
+    for key in grouped.keys():
+        for i in range(len(grouped[key])):
+            grouped[key][i] = grouped[key][i][interest_i]
+
+    return grouped
