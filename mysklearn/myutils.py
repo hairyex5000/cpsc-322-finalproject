@@ -155,7 +155,7 @@ def group_by(table: MyPyTable, group_by_col: str) -> dict:
         if key in out:
             out[key].append(row.copy())
         else:
-            out[key] = [row]
+            out[key] = [row.copy()]
 
     return out
 
