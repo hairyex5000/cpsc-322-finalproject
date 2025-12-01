@@ -549,20 +549,23 @@ class MyRandomForestClassifier:
         N (int): The number of trees in the forest.
         M (int): The number of trees to use when making predictions.
         F (int): The number of features to randomly select during fitting.
+        random_state(int): The seed for the random number generator.
     """
 
-    def __init__(self, N, M, F):
+    def __init__(self, N, M, F, random_state=None):
         """Initializes the random forest classifier.
 
         Args:
             N (int): The number of trees in the forest.
             M (int): The number of trees to use when making predictions.
             F (int): The number of features to randomly select during fitting.
+            random_state(int or None): The seed for the random number generator.
         """
         self.trees = []
         self.N = N
         self.M = M
         self.F = F
+        self.random_state = random_state
 
     def fit(self, x_train, y_train):
         """Fits a random forest classifier.
