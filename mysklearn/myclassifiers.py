@@ -496,7 +496,7 @@ class MyDecisionTreeClassifier:
             if instance_value == value:
                 return self._predict_subtree(subtree, instance)
 
-    def fit(self, X_train, y_train):
+    def fit(self, X_train, y_train, allowed_atts):
         """Fits a decision tree classifier to X_train and y_train using the TDIDT
         (top down induction of decision tree) algorithm.
 
@@ -505,6 +505,7 @@ class MyDecisionTreeClassifier:
                 The shape of X_train is (n_train_samples, n_features)
             y_train(list of obj): The target y values (parallel to X_train)
                 The shape of y_train is n_train_samples
+            allowed_atts(list of int): The list of allowed attribute indexes to use for splitting.
 
         Notes:
             Since TDIDT is an eager learning algorithm, this method builds a decision tree model
@@ -515,10 +516,14 @@ class MyDecisionTreeClassifier:
             Use attribute indexes to construct default attribute names (e.g. "att0", "att1", ...).
         """
         # Start by building up headers and attribute domains programmatically
-        self._header = ["att" + str(i) for i in range(len(X_train[0]))]
+        self._header = [
+            "att" + str(i) for i in range(len(X_train[0])) if i in allowed_atts]
         self._attribute_domains = {a: set() for a in self._header}
         for row in X_train:
             for i in range(len(row)):
+                if i not in allowed_atts:
+                    continue
+
                 self._attribute_domains[self._header[i]].add(row[i])
 
         self._classes = set()

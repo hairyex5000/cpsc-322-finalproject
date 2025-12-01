@@ -27,6 +27,25 @@ def randomize_in_place(alist, parallel_list=None):
             parallel_list[i], parallel_list[rand_index] = parallel_list[rand_index], parallel_list[i]
 
 
+def compute_random_subset(values, num_values):
+    """
+    Computes a random subset of specified size from the input list.
+
+    Args:
+        values (list): The list from which to select a random subset.
+        num_values (int): The number of elements to include in the subset.
+
+    Returns:
+        list: A list containing a random subset of `num_values` elements from `values`.
+
+    Notes:
+        Taken from M6-A Lab Task 2.
+    """
+    values_copy = values[:]  # shallow copy
+    np.random.shuffle(values_copy)  # in place shuffle
+    return values_copy[:num_values]
+
+
 def euclidean_distance(a: list, b: list) -> float:
     """
     Computes the Euclidean distance between two vectors.
