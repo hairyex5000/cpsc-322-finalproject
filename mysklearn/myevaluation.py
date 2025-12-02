@@ -100,6 +100,7 @@ def kfold_split(X, n_splits=5, random_state=None, shuffle=False):
 
     return folds
 
+
 def stratified_kfold_split(X, y, n_splits=5, random_state=None, shuffle=False):
     """Split dataset into stratified cross validation folds.
 
@@ -133,7 +134,7 @@ def stratified_kfold_split(X, y, n_splits=5, random_state=None, shuffle=False):
         to_map = {k: tmp_idx[k] for k in range(x_len)}
 
     tmp_dist = {}
-    for index in range(len(y)): # pylint: disable=consider-using-enumerate
+    for index in range(len(y)):  # pylint: disable=consider-using-enumerate
         if y[index] in tmp_dist:
             tmp_dist[y[index]].append(to_map[index])
         else:
@@ -142,8 +143,8 @@ def stratified_kfold_split(X, y, n_splits=5, random_state=None, shuffle=False):
     for class_name in list(sorted(tmp_dist.keys(), key=lambda x: tmp_dist[x])):
         i = 0
         while len(tmp_dist[class_name]) > 0:
-            tmp_fold[i%n_splits].append(tmp_dist[class_name].pop(-1))
-            i+=1
+            tmp_fold[i % n_splits].append(tmp_dist[class_name].pop(-1))
+            i += 1
     to_return = []
     for fold_index in range(n_splits):
         tmp_train = []
@@ -152,6 +153,7 @@ def stratified_kfold_split(X, y, n_splits=5, random_state=None, shuffle=False):
                 tmp_train.append(index)
         to_return.append((tmp_train, tmp_fold[fold_index]))
     return to_return
+
 
 def bootstrap_sample(X, y=None, n_samples=None, random_state=None):
     """Split dataset into bootstrapped training set and out of bag test set.
@@ -225,7 +227,7 @@ def confusion_matrix(y_true, y_pred, labels):
     return [list(row) for row in matrix]
 
 
-def accuracy_score(y_true, y_pred, normalize=True):
+def accuracy_score(y_true, y_pred, labels):
     """Compute the classification prediction accuracy score.
 
     Args:
@@ -233,64 +235,42 @@ def accuracy_score(y_true, y_pred, normalize=True):
             The shape of y is n_samples
         y_pred(list of obj): The predicted target y values (parallel to y_true)
             The shape of y is n_samples
-        normalize(bool): If False, return the number of correctly classified samples.
-            Otherwise, return the fraction of correctly classified samples.
+        labels(list of str): The list of all possible target y labels
 
     Returns:
-        score(float): If normalize == True, return the fraction of correctly classified samples (float),
-            else returns the number of correctly classified samples (int).
+        score(float): Predictive accuracy score as a ratio in [0.0, 1.0]
 
     Notes:
+        Uses the micro approach.
         Loosely based on sklearn's accuracy_score():
             https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
     """
-    n_correct = sum(
-        [1 if y_true[i] == y_pred[i] else 0
-         for i in range(len(y_true))]
-    )
+    matrix = np.array(confusion_matrix(y_true, y_pred, labels))
 
-    if normalize:
-        return float(n_correct) / len(y_true)
-    else:
-        return n_correct
+    return np.diag(matrix).sum() / matrix.sum()
 
 
-def binary_precision_score(y_true, y_pred, labels=None, pos_label=None):
-    """Compute the precision (for binary classification). The precision is the ratio tp / (tp + fp)
-        where tp is the number of true positives and fp the number of false positives.
-        The precision is intuitively the ability of the classifier not to label as
-        positive a sample that is negative. The best value is 1 and the worst value is 0.
+def precision_score(y_true, y_pred, labels):
+    """
+    Computes the precision score.
 
     Args:
         y_true(list of obj): The ground_truth target y values
             The shape of y is n_samples
         y_pred(list of obj): The predicted target y values (parallel to y_true)
             The shape of y is n_samples
-        labels(list of obj): The list of possible class labels. If None, defaults to
-            the unique values in y_true
-        pos_label(obj): The class label to report as the "positive" class. If None, defaults
-            to the first label in labels
+        labels(list of obj): The list of possible class labels.
 
     Returns:
-        precision(float): Precision of the positive class
+        precision(float): Precision score
 
     Notes:
-        Loosely based on sklearn's precision_score():
-            https://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html
+        Uses the micro approach.
     """
-    tp = 0
-    fp = 0
-    pos = pos_label if pos_label != None else labels[0]
+    matrix = np.array(confusion_matrix(y_true, y_pred, labels))
 
-    for i in range(len(y_true)):
-        # If the prediction is not positive, we don't care
-        if y_pred[i] != pos:
-            continue
-
-        if y_true[i] == y_pred[i]:
-            tp += 1
-        elif y_true[i] != y_pred[i]:
-            fp += 1
+    tp = np.diag(matrix).sum()
+    fp = (matrix.sum(axis=0) - np.diag(matrix)).sum()
 
     # Handle edge case where there are no positive predictions
     if tp == 0 and fp == 0:
@@ -299,38 +279,27 @@ def binary_precision_score(y_true, y_pred, labels=None, pos_label=None):
     return tp / (tp + fp)
 
 
-def binary_recall_score(y_true, y_pred, labels=None, pos_label=None):
-    """Compute the recall (for binary classification). The recall is the ratio tp / (tp + fn) where tp is
-        the number of true positives and fn the number of false negatives.
-        The recall is intuitively the ability of the classifier to find all the positive samples.
-        The best value is 1 and the worst value is 0.
+def recall_score(y_true, y_pred, labels):
+    """
+    Computes the recall score.
 
     Args:
         y_true(list of obj): The ground_truth target y values
             The shape of y is n_samples
         y_pred(list of obj): The predicted target y values (parallel to y_true)
             The shape of y is n_samples
-        labels(list of obj): The list of possible class labels. If None, defaults to
-            the unique values in y_true
-        pos_label(obj): The class label to report as the "positive" class. If None, defaults
-            to the first label in labels
+        labels(list of obj): The list of possible class labels.
 
     Returns:
-        recall(float): Recall of the positive class
+        recall(float): Recall score
 
     Notes:
-        Loosely based on sklearn's recall_score():
-            https://scikit-learn.org/stable/modules/generated/sklearn.metrics.recall_score.html
+        Uses the micro approach.
     """
-    tp = 0
-    fn = 0
-    pos = pos_label if pos_label != None else labels[0]
+    matrix = np.array(confusion_matrix(y_true, y_pred, labels))
 
-    for i in range(len(y_true)):
-        if y_true[i] == y_pred[i] and y_pred[i] == pos:
-            tp += 1
-        elif y_true[i] != y_pred[i] and y_true[i] == pos:
-            fn += 1
+    tp = np.diag(matrix).sum()
+    fn = (matrix.sum(axis=1) - np.diag(matrix)).sum()
 
     # Handle edge case for div by 0
     if tp == 0 and fn == 0:
@@ -339,32 +308,25 @@ def binary_recall_score(y_true, y_pred, labels=None, pos_label=None):
     return tp / (tp + fn)
 
 
-def binary_f1_score(y_true, y_pred, labels=None, pos_label=None):
-    """Compute the F1 score (for binary classification), also known as balanced F-score or F-measure.
-        The F1 score can be interpreted as a harmonic mean of the precision and recall,
-        where an F1 score reaches its best value at 1 and worst score at 0.
-        The relative contribution of precision and recall to the F1 score are equal.
-        The formula for the F1 score is: F1 = 2 * (precision * recall) / (precision + recall)
+def f1_score(y_true, y_pred, labels):
+    """
+    Computes the F1 score.
 
     Args:
         y_true(list of obj): The ground_truth target y values
             The shape of y is n_samples
         y_pred(list of obj): The predicted target y values (parallel to y_true)
             The shape of y is n_samples
-        labels(list of obj): The list of possible class labels. If None, defaults to
-            the unique values in y_true
-        pos_label(obj): The class label to report as the "positive" class. If None, defaults
-            to the first label in labels
+        labels(list of obj): The list of possible class labels.
 
     Returns:
-        f1(float): F1 score of the positive class
+        f1(float): F1 score
 
     Notes:
-        Loosely based on sklearn's f1_score():
-            https://scikit-learn.org/stable/modules/generated/sklearn.metrics.f1_score.html
+        Uses the micro approach.
     """
-    precision = binary_precision_score(y_true, y_pred, labels, pos_label)
-    recall = binary_recall_score(y_true, y_pred, labels, pos_label)
+    precision = precision_score(y_true, y_pred, labels)
+    recall = recall_score(y_true, y_pred, labels)
 
     # Handle edge case for div by 0
     if precision == 0 and recall == 0:

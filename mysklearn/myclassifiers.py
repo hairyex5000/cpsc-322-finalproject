@@ -1,5 +1,6 @@
 import numpy as np
 from mysklearn.myutils import euclidean_distance
+from mysklearn.myevaluation import bootstrap_sample, accuracy_score
 
 
 class MyKNeighborsClassifier:

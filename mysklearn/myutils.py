@@ -1,6 +1,4 @@
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
 from tabulate import tabulate
 from mysklearn import myevaluation
 from mysklearn.mypytable import MyPyTable
