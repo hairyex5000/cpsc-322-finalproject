@@ -3,8 +3,8 @@ import sklearn.metrics as skm
 from mysklearn.myevaluation import accuracy_score,  precision_score, recall_score, f1_score
 
 
-y_pred = ['cat', 'dog', 'horse', 'cat', 'cat', 'dog', 'horse', 'horse']  # 8
-y_true = ['cat', 'dog', 'cat', 'cat', 'dog', 'dog', 'horse', 'horse']  # 8
+y_pred = ['cat', 'dog', 'horse', 'cat', 'cat', 'dog', 'horse', 'horse']
+y_true = ['cat', 'dog', 'cat', 'cat', 'dog', 'dog', 'horse', 'horse']
 labels = ['cat', 'dog', 'horse']
 
 

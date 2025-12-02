@@ -1,5 +1,5 @@
 import numpy as np
-from mysklearn.myutils import euclidean_distance
+from mysklearn.myutils import euclidean_distance, compute_random_subset
 from mysklearn.myevaluation import bootstrap_sample, accuracy_score
 
 
@@ -272,6 +272,7 @@ class MyDecisionTreeClassifier:
         y_train(list of obj): The target y values (parallel to X_train).
             The shape of y_train is n_samples
         tree(nested list): The extracted tree model.
+        f(int): Number of features that can be considered for splitting.
 
     Notes:
         Loosely based on sklearn's DecisionTreeClassifier:
@@ -279,7 +280,7 @@ class MyDecisionTreeClassifier:
         Terminology: instance = sample = row and attribute = feature = column
     """
 
-    def __init__(self):
+    def __init__(self, f):
         """Initializer for MyDecisionTreeClassifier.
         """
         self.X_train = None
@@ -288,6 +289,7 @@ class MyDecisionTreeClassifier:
         self._attribute_domains = None
         self._classes = None
         self.tree = None
+        self.f = f
 
     def _select_attribute(self, instances, attributes):
         """Selects the best attribute to split on based on entropy.
@@ -301,7 +303,13 @@ class MyDecisionTreeClassifier:
         """
         att_entropies = []
 
-        for att in attributes:
+        att_considered = attributes.copy()
+
+        # We have to take a random subset of attributes of size f
+        if len(attributes) > self.f:
+            compute_random_subset(att_considered, self.f)
+
+        for att in att_considered:
             entropy = 0
             partitions = self._partition_instances(instances, att)
 
@@ -497,7 +505,7 @@ class MyDecisionTreeClassifier:
             if instance_value == value:
                 return self._predict_subtree(subtree, instance)
 
-    def fit(self, X_train, y_train, allowed_atts):
+    def fit(self, X_train, y_train):
         """Fits a decision tree classifier to X_train and y_train using the TDIDT
         (top down induction of decision tree) algorithm.
 
@@ -506,7 +514,6 @@ class MyDecisionTreeClassifier:
                 The shape of X_train is (n_train_samples, n_features)
             y_train(list of obj): The target y values (parallel to X_train)
                 The shape of y_train is n_train_samples
-            allowed_atts(list of int): The list of allowed attribute indexes to use for splitting.
 
         Notes:
             Since TDIDT is an eager learning algorithm, this method builds a decision tree model
@@ -517,15 +524,11 @@ class MyDecisionTreeClassifier:
             Use attribute indexes to construct default attribute names (e.g. "att0", "att1", ...).
         """
         # Start by building up headers and attribute domains programmatically
-        self._header = [
-            "att" + str(i) for i in range(len(X_train[0])) if i in allowed_atts]
+        self._header = ["att" + str(i) for i in range(len(X_train[0]))]
         self._attribute_domains = {a: set() for a in self._header}
         for row in X_train:
             for i in range(len(row)):
-                if i not in allowed_atts:
-                    continue
-
-                self._attribute_domains[self._header[i]].add(row[i])
+                self._attribute_domains[f"att{i}"].add(row[i])
 
         self._classes = set()
         for label in y_train:
@@ -580,7 +583,43 @@ class MyRandomForestClassifier:
             x_train (list of list of obj): The training instances.
             y_train (list of obj): The target y values.
         """
-        pass
+
+        tree_accuracies = []
+
+        # We have to find the labels used
+        labels = set()
+        for v in y_train:
+            labels.add(v)
+
+        # Our eval functions expect lists
+        labels = list(labels)
+
+        if self.random_state is not None:
+            np.random.seed(self.random_state)
+
+        for _ in range(self.N):
+            x_sample, x_out, y_sample, y_out = bootstrap_sample(
+                x_train, y_train)
+
+            # Now we can build the tree
+            tree = MyDecisionTreeClassifier(self.F)
+            tree.fit(x_sample, y_sample)
+
+            self.trees.append(tree)
+
+            # Now compute accuracy on out-of-bag samples
+            y_pred = tree.predict(x_out)
+            acc = accuracy_score(y_out, y_pred, labels)
+            tree_accuracies.append(acc)
+
+        # Now that the forest has been created, only keep the best M trees
+        accuracy_indices = sorted(
+            list(range(len(tree_accuracies))),
+            key=lambda v: tree_accuracies[v],
+            reverse=True
+        )[:self.M]
+
+        self.trees = [self.trees[i] for i in accuracy_indices]
 
     def predict(self, x_test):
         """Makes predictions for test instances in X_test.
