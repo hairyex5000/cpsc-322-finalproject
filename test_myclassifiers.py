@@ -50,7 +50,6 @@ tree_interview = \
       ]
      ]
 
-
 # LA7 (fake) iPhone purchases dataset
 header_iphone = ["standing", "job_status", "credit_rating"]
 X_train_iphone = [
@@ -113,22 +112,22 @@ tree_iphone = \
 def test_decision_tree_classifier_fit():
     # 1 - Interview
 
-    tree = MyDecisionTreeClassifier()
-    tree.fit(X_train_interview, y_train_interview, [i for i in range(4)])
+    tree = MyDecisionTreeClassifier(4)
+    tree.fit(X_train_interview, y_train_interview)
     assert tree_interview == tree.tree
 
     # 2 - LA7 Phones
 
-    tree = MyDecisionTreeClassifier()
-    tree.fit(X_train_iphone, y_train_iphone, [i for i in range(3)])
+    tree = MyDecisionTreeClassifier(10)
+    tree.fit(X_train_iphone, y_train_iphone)
     assert tree_iphone == tree.tree
 
 
 def test_decision_tree_classifier_predict():
     # 1 - Interview
 
-    tree = MyDecisionTreeClassifier()
-    tree.fit(X_train_interview, y_train_interview, [i for i in range(4)])
+    tree = MyDecisionTreeClassifier(4)
+    tree.fit(X_train_interview, y_train_interview)
     predicts = tree.predict([["Junior", "Java", "yes", "no"],
                              ["Junior", "Java", "yes", "yes"]])
 
@@ -136,16 +135,38 @@ def test_decision_tree_classifier_predict():
 
     # 2 - LA7 Phones
 
-    tree = MyDecisionTreeClassifier()
-    tree.fit(X_train_iphone, y_train_iphone, [i for i in range(3)])
+    tree = MyDecisionTreeClassifier(3)
+    tree.fit(X_train_iphone, y_train_iphone)
     predicts = tree.predict([[2, 2, "fair"],
                              [1, 1, "excellent"]])
 
     assert predicts == ["yes", "yes"]
 
 
+def is_subtree_valid(subtree):
+    if subtree[0] == "Attribute" or subtree[0] == "Value":
+        for child in subtree[2:]:
+            if not is_subtree_valid(child):
+                return False
+        return True
+    elif subtree[0] == "Leaf":
+        return len(subtree) == 4
+    else:
+        return False
+
+
 def test_random_forest_classifier_fit():
-    assert True is False  # TODO
+    forest = MyRandomForestClassifier(N=10, M=5, F=2, random_state=52621)
+    forest.fit(X_train_interview, y_train_interview)
+
+    # Only 5 trees are kept
+    assert len(forest.trees) == 5
+
+    # Each tree should have a valid structure
+    for tree in forest.trees:
+        # Top level is always "Attribute"
+        assert tree.tree[0] == "Attribute"
+        assert is_subtree_valid(tree.tree)
 
 
 def test_random_forest_classifier_predict():

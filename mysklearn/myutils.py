@@ -25,13 +25,14 @@ def randomize_in_place(alist, parallel_list=None):
             parallel_list[i], parallel_list[rand_index] = parallel_list[rand_index], parallel_list[i]
 
 
-def compute_random_subset(values, num_values):
+def compute_random_subset(values, num_values, random_state=None):
     """
     Computes a random subset of specified size from the input list.
 
     Args:
         values (list): The list from which to select a random subset.
         num_values (int): The number of elements to include in the subset.
+        random_state (int, optional): Seed for the random number generator to ensure reproducibility.
 
     Returns:
         list: A list containing a random subset of `num_values` elements from `values`.
@@ -39,6 +40,9 @@ def compute_random_subset(values, num_values):
     Notes:
         Taken from M6-A Lab Task 2.
     """
+    if random_state is not None:
+        np.random.seed(random_state)
+
     values_copy = values[:]  # shallow copy
     np.random.shuffle(values_copy)  # in place shuffle
     return values_copy[:num_values]
