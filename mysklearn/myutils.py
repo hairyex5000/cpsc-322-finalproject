@@ -251,7 +251,7 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         classifier.fit(x_train, y_train)
         y_pred+=classifier.predict(x_test)
         y_actual+=y_test
-    confusion_matrix_pretty_print(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes))
+    # confusion_matrix_pretty_print(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes))
     print(f'accuracy: {accuracy_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
     print(f'precision: {precision_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
     print(f'f1 score: {f1_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
