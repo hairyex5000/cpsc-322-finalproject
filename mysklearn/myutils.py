@@ -47,14 +47,16 @@ def equal_width_bin(values, num_bins):
 
     return binned
 
+
 def equal_size_bin(values, num_bins):
     tmp = sorted(copy.deepcopy(values))
     bins = [[] * num_bins]
     count = 0
     while (count < len(tmp)):
-        bins[count%num_bins].append(tmp[count])
-        count+=1
+        bins[count % num_bins].append(tmp[count])
+        count += 1
     return bins
+
 
 def compute_random_subset(values, num_values, random_state=None):
     """
@@ -292,6 +294,8 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
 
         y_pred += preds
         y_actual += y_test
+
+    pretty_confusion_matrix(y_actual, y_pred, possible_classes)
     # confusion_matrix_pretty_print(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes))
     print(
         f'accuracy: {accuracy_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
