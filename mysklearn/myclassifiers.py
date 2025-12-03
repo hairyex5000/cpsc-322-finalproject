@@ -571,7 +571,7 @@ class MyRandomForestClassifier:
             F (int): The number of features to randomly select during fitting.
             random_state(int or None): The seed for the random number generator.
         """
-        self.trees = []
+        self.trees: list[MyDecisionTreeClassifier] = []
         self.N = N
         self.M = M
         self.F = F
@@ -636,3 +636,9 @@ class MyRandomForestClassifier:
 
         # Majority vote
         final_predictions = []
+
+        for i in range(len(x_test)):
+            votes = [predictions[j][i] for j in range(len(self.trees))]
+            final_predictions.append(max(set(votes), key=votes.count))
+
+        return final_predictions

@@ -220,4 +220,35 @@ def test_random_forest_classifier_fit():
 
 
 def test_random_forest_classifier_predict():
-    assert True is False  # TODO
+    # 1
+
+    forest = MyRandomForestClassifier(N=10, M=5, F=2, random_state=47446)
+    forest.fit(X_train_interview, y_train_interview)
+    preds = forest.predict([["Junior", "Java", "yes", "no"],
+                            ["Junior", "Java", "yes", "yes"]])
+
+    assert len(preds) == 2
+    for p in preds:
+        assert p in ["True", "False"]
+
+    # 2
+
+    forest = MyRandomForestClassifier(N=5, M=2, F=3, random_state=41754)
+    forest.fit(X_train_interview, y_train_interview)
+    preds = forest.predict([["Junior", "Java", "yes", "no"],
+                            ["Junior", "Java", "yes", "yes"]])
+
+    assert len(preds) == 2
+    for p in preds:
+        assert p in ["True", "False"]
+
+    # 3
+
+    forest = MyRandomForestClassifier(N=20, M=20, F=1, random_state=8575)
+    forest.fit(X_train_interview, y_train_interview)
+    preds = forest.predict([["Junior", "Java", "yes", "no"],
+                            ["Junior", "Java", "yes", "yes"]])
+
+    assert len(preds) == 2
+    for p in preds:
+        assert p in ["True", "False"]
