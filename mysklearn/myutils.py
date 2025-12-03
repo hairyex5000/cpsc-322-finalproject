@@ -29,6 +29,25 @@ def randomize_in_place(alist, parallel_list=None):
             parallel_list[i], parallel_list[rand_index] = parallel_list[rand_index], parallel_list[i]
 
 
+def equal_width_bin(values, num_bins):
+    width = (max(values) - min(values)) / num_bins
+
+    # generate cutoffs
+    cutoffs = [min(values) + i*width for i in range(num_bins)]
+
+    # append the maximum value
+    cutoffs.append(max(values))
+
+    binned = []
+    for v in values:
+        for i in range(len(cutoffs)-1):
+            if cutoffs[i] <= v <= cutoffs[i+1]:
+                binned.append(i)
+                break
+
+    return binned
+
+
 def compute_random_subset(values, num_values, random_state=None):
     """
     Computes a random subset of specified size from the input list.
@@ -195,6 +214,7 @@ def eda_group_data_by_class(table: MyPyTable, interest_col: str):
 
     return grouped
 
+
 def confusion_matrix_pretty_print(y_true, y_pred, labels: list):
     """Prints confusion matrices in a readable format.
 
@@ -210,6 +230,7 @@ def confusion_matrix_pretty_print(y_true, y_pred, labels: list):
         tmp_matrix[index] = [labels[index]] + tmp_matrix[index] + [sum(tmp_matrix[index]),
                                                                    (count*100)/sum(tmp_matrix[index]) if sum(tmp_matrix[index]) else 0]
     MyPyTable(column_names=cols, data=tmp_matrix).pretty_print()
+
 
 def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible_classes, n_splits: int):
     """Prints various results from testing a provided classifier with kfolds.
@@ -240,7 +261,7 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
     y_pred, y_actual = [], []
     count = 0
     for fold in kfold:
-        count+=1
+        count += 1
         print(f'Fold #{count} started')
         train = fold[0]
         test = fold[1]
@@ -249,11 +270,16 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         y_train = [y_data[x] for x in train]
         y_test = [y_data[x] for x in test]
         classifier.fit(x_train, y_train)
-        y_pred+=classifier.predict(x_test)
-        y_actual+=y_test
+        y_pred += classifier.predict(x_test)
+        y_actual += y_test
     # confusion_matrix_pretty_print(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes))
-    print(f'accuracy: {accuracy_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
-    print(f'precision: {precision_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
-    print(f'f1 score: {f1_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
-    print(f'recall: {recall_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
-    print(classification_report(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes), False))
+    print(
+        f'accuracy: {accuracy_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(
+        f'precision: {precision_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(
+        f'f1 score: {f1_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(
+        f'recall: {recall_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(classification_report(copy.deepcopy(y_actual), copy.deepcopy(
+        y_pred), copy.deepcopy(possible_classes), False))
