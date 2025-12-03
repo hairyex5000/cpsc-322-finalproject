@@ -1,3 +1,7 @@
+import copy
+import os
+from mysklearn.myevaluation import confusion_matrix, classification_report, stratified_kfold_split, accuracy_score, precision_score, f1_score, recall_score
+from mysklearn.mypytable import MyPyTable
 import numpy as np
 from tabulate import tabulate
 from mysklearn import myevaluation
@@ -11,8 +15,8 @@ def randomize_in_place(alist, parallel_list=None):
 
     Args:
         alist(list): The list whose elements will be shuffled in place.
-        parallel_list(list): If provided, must be the same length as `alist`. 
-            Elements at the same indices will be swapped in 
+        parallel_list(list): If provided, must be the same length as `alist`.
+            Elements at the same indices will be swapped in
             lockstep with `alist` so that paired data remain aligned.
     """
     for i in range(len(alist)):
@@ -190,3 +194,66 @@ def eda_group_data_by_class(table: MyPyTable, interest_col: str):
             grouped[key][i] = grouped[key][i][interest_i]
 
     return grouped
+
+def confusion_matrix_pretty_print(y_true, y_pred, labels: list):
+    """Prints confusion matrices in a readable format.
+
+    Args:
+        y_true(list of obj): The actual classes that correspond to predictions made.
+        y_pred(list of obj): Predictions made by the classifier.
+        labels(list of obj): The classes that are possible.
+    """
+    cols = [""]+labels+['Total', 'Recognition %']
+    tmp_matrix = confusion_matrix(y_true, y_pred, labels)
+    for index in range(len(tmp_matrix)):
+        count = tmp_matrix[index][index]
+        tmp_matrix[index] = [labels[index]] + tmp_matrix[index] + [sum(tmp_matrix[index]),
+                                                                   (count*100)/sum(tmp_matrix[index]) if sum(tmp_matrix[index]) else 0]
+    MyPyTable(column_names=cols, data=tmp_matrix).pretty_print()
+
+def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible_classes, n_splits: int):
+    """Prints various results from testing a provided classifier with kfolds.
+
+    Args:
+        classifier(any): class with fit and predict functions.
+        table(MyPyTable): the original data table.
+        class_header(str): the column in the data table that corresponds to the class to predict.
+        possible_classes(list of str): the possible classes for the dataset.
+        n_splits(int): the number of kfold splits to do.
+    """
+    y_data = copy.deepcopy(table.get_column(class_header))
+    tmp_inx = table.column_names.index(class_header)
+    tmp_data = copy.deepcopy(table.data)
+    for inx in range(len(tmp_data)):
+        tmp_data[inx].pop(tmp_inx)
+    tmp_header = copy.deepcopy(table.column_names)
+    tmp_header.pop(tmp_inx)
+    x_data = tmp_data
+    print('Setup complete')
+    kfold = stratified_kfold_split(
+        x_data,
+        y_data,
+        n_splits,
+        os.urandom(64),
+        True
+    )
+    y_pred, y_actual = [], []
+    count = 0
+    for fold in kfold:
+        count+=1
+        print(f'Fold #{count} started')
+        train = fold[0]
+        test = fold[1]
+        x_train = [x_data[x] for x in train]
+        x_test = [x_data[x] for x in test]
+        y_train = [y_data[x] for x in train]
+        y_test = [y_data[x] for x in test]
+        classifier.fit(x_train, y_train)
+        y_pred+=classifier.predict(x_test)
+        y_actual+=y_test
+    confusion_matrix_pretty_print(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes))
+    print(f'accuracy: {accuracy_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(f'precision: {precision_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(f'f1 score: {f1_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(f'recall: {recall_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
+    print(classification_report(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes), False))

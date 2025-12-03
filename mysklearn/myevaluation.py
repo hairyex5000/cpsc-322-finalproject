@@ -1,7 +1,6 @@
 import random
 import numpy as np  # use numpy's random number generation
-from mysklearn import myutils
-
+from mysklearn import myutils, mypytable
 
 def train_test_split(X, y, test_size=0.33, random_state=None, shuffle=True):
     """Split dataset into train and test sets based on a test set size.
@@ -333,3 +332,199 @@ def f1_score(y_true, y_pred, labels):
         return 0
 
     return 2 * (precision * recall) / (precision + recall)
+
+def binary_error_rate(y_true, y_pred, labels=None, pos_label=None):
+    """Calculates the error rate of classifications with binary labels.
+
+    Args:
+        y_true(list of obj): The actual classes that correspond to predictions made.
+        y_pred(list of obj): Predictions made by the classifier.
+        labels(list of obj): The two classes that are possible.
+        pos_label(obj): The class that represents the positive label.
+
+    Returns:
+        score(float): The error rate of the predictions and actual classes provided.
+    """
+    if labels is None:
+        labels = list(set(y_pred).union(set(y_true)))
+    if pos_label is None:
+        pos_label = sorted(list(set(labels)))[-1]
+    fn = (sum(y_pred[x]!=pos_label and y_true[x]==pos_label for x in range(len(y_true))))
+    fp = (sum(y_pred[x]==pos_label and y_true[x]!=pos_label for x in range(len(y_true))))
+    if len(y_pred) != 0:
+        return (fn+fp)/len(y_pred)
+    return 0
+
+def binary_precision_score(y_true, y_pred, labels=None, pos_label=None, more_info=False):
+    """Calculates the precision score of classifications with binary labels.
+
+    Args:
+        y_true(list of obj): The actual classes that correspond to predictions made.
+        y_pred(list of obj): Predictions made by the classifier.
+        labels(list of obj): The two classes that are possible.
+        pos_label(obj): The class that represents the positive label.
+        more_info(bool): Returns tuple with more info if desired
+
+    Returns:
+        score(float or dict): The precision score of the predictions and actual classes provided,
+        or the precision score plus the true positives and false positives
+    """
+    if labels is None:
+        labels = list(set(y_pred).union(set(y_true)))
+    if pos_label is None:
+        pos_label = sorted(list(set(labels)))[-1]
+    tp = (sum(y_true[x]==pos_label and y_pred[x]==pos_label for x in range(len(y_true))))
+    fp = (sum(y_pred[x]==pos_label and y_true[x]!=pos_label for x in range(len(y_true))))
+    if tp+fp != 0:
+        tmp_result = tp / (tp+fp)
+    else:
+        tmp_result = 0
+    if more_info:
+        return {
+            'value': tmp_result,
+            'tp': tp,
+            'fp': fp
+        }
+    return tmp_result
+
+def binary_recall_score(y_true, y_pred, labels=None, pos_label=None, more_info=False):
+    """Calculates the recall score of classifications with binary labels.
+
+    Args:
+        y_true(list of obj): The actual classes that correspond to predictions made.
+        y_pred(list of obj): Predictions made by the classifier.
+        labels(list of obj): The two classes that are possible.
+        pos_label(obj): The class that represents the positive label.
+        more_info(bool): Returns tuple with more info if desired
+
+    Returns:
+        score(float or dict): The recall score of the predictions and actual classes provided,
+        or the recall score plus the true positives and false negatives
+    """
+    if labels is None:
+        labels = list(set(y_pred).union(set(y_true)))
+    if pos_label is None:
+        pos_label = sorted(list(set(labels)))[-1]
+    tp = (sum(y_true[x]==pos_label and y_pred[x]==pos_label for x in range(len(y_true))))
+    fn = (sum(y_pred[x]!=pos_label and y_true[x]==pos_label for x in range(len(y_true))))
+
+    if tp+fn != 0:
+        tmp_result = tp / (tp+fn)
+    else:
+        tmp_result = 0
+    if more_info:
+        return {
+            'value': tmp_result,
+            'tp': tp,
+            'fn': fn
+        }
+    return tmp_result
+
+def binary_f1_score(y_true, y_pred, labels=None, pos_label=None):
+    """Calculates the f1 score of classifications with binary labels.
+
+    Args:
+        y_true(list of obj): The actual classes that correspond to predictions made.
+        y_pred(list of obj): Predictions made by the classifier.
+        labels(list of obj): The two classes that are possible.
+        pos_label(obj): The class that represents the positive label.
+
+    Returns:
+        score(float): The f1 score of the predictions and actual classes provided.
+    """
+
+    prec = binary_precision_score(y_true, y_pred, labels, pos_label)
+    recall = binary_recall_score(y_true, y_pred, labels, pos_label)
+
+    if (prec+recall) != 0:
+        return (2*prec*recall)/(prec+recall)
+    return 0
+
+
+def classification_report(y_true, y_pred, labels, output_dict=True):
+    """Build a text report and a dictionary showing the main classification metrics.
+
+    Args:
+        y_true(list of obj): The ground_truth target y values
+            The shape of y is n_samples
+        y_pred(list of obj): The predicted target y values (parallel to y_true)
+            The shape of y is n_samples
+        labels(list of obj): The list of possible class labels. If None, defaults to
+            the unique values in y_true
+        output_dict(bool): If True, return output as dict instead of a str
+
+    Returns:
+        report(str or dict): Text summary of the precision, recall, F1 score for each class.
+            Dictionary returned if output_dict is True. Dictionary has the following structure:
+                {'label 1': {'precision':0.5,
+                            'recall':1.0,
+                            'f1-score':0.67,
+                            'support':1},
+                'label 2': { ... },
+                ...
+                }
+            The reported averages include macro average (averaging the unweighted mean per label) and
+            weighted average (averaging the support-weighted mean per label).
+            Micro average (averaging the total true positives, false negatives and false positives)
+            multi-class with a subset of classes, because it corresponds to accuracy otherwise
+            and would be the same for all metrics.
+
+    Notes:
+        Loosely based on sklearn's classification_report():
+            https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html
+    """
+    priors = {k: 0 for k in labels}
+    for y_value in y_true:
+        priors[y_value]+=1
+    tmp_len = len(y_true)
+    tp, fp, fn = 0, 0, 0
+    prec, recall, f1 = 0, 0, 0
+    sum_prec, sum_recall, sum_f1 = 0, 0, 0
+    tmp_result = {}
+    for class_name in priors:
+        tmp_precision = binary_precision_score(y_true, y_pred, labels, class_name, True)
+        tmp_recall = binary_recall_score(y_true, y_pred, labels, class_name, True)
+        tmp_result[class_name] = {}
+        tmp_result[class_name]['precision'] = tmp_precision['value']
+        tmp_result[class_name]['recall'] = tmp_recall['value']
+        tmp_result[class_name]['f1-score'] = binary_f1_score(y_true, y_pred, labels, class_name)
+        tmp_result[class_name]['support'] = priors[class_name]
+        prec+=tmp_result[class_name]['precision']
+        recall+=tmp_result[class_name]['recall']
+        f1+=tmp_result[class_name]['f1-score']
+        tp+=tmp_precision['tp']
+        fp+=tmp_precision['fp']
+        fn+=tmp_recall['fn']
+        sum_prec += tmp_result[class_name]['precision'] * (priors[class_name]/tmp_len)
+        sum_recall += tmp_result[class_name]['recall'] * (priors[class_name]/tmp_len)
+        sum_f1 += tmp_result[class_name]['f1-score'] * (priors[class_name]/tmp_len)
+
+    tmp_result['micro avg'] = {}
+    tmp_result['micro avg']['precision'] = tp / (tp+fp) if tp+fp != 0 else None
+    tmp_result['micro avg']['recall'] = tp / (tp+fn) if tp+fn != 0 else None
+    tmp_result['micro avg']['f1-score'] = (2*tmp_result['micro avg']['precision']*tmp_result['micro avg']['recall'])
+    if tmp_result['micro avg']['precision']+tmp_result['micro avg']['recall'] != 0:
+        tmp_result['micro avg']['f1-score'] /= tmp_result['micro avg']['precision']+tmp_result['micro avg']['recall']
+    else:
+        tmp_result['micro avg']['f1-score'] = 0
+    tmp_result['micro avg']['support'] = len(y_true)
+
+    tmp_result['macro avg'] = {}
+    tmp_result['macro avg']['precision'] = prec/len(labels)
+    tmp_result['macro avg']['recall'] = recall/len(labels)
+    tmp_result['macro avg']['f1-score'] = f1/len(labels)
+    tmp_result['macro avg']['support'] = len(y_true)
+
+    tmp_result['weighted avg'] = {}
+    tmp_result['weighted avg']['precision'] = sum_prec
+    tmp_result['weighted avg']['recall'] = sum_recall
+    tmp_result['weighted avg']['f1-score'] = sum_f1
+    tmp_result['weighted avg']['support'] = len(y_true)
+
+    if not output_dict:
+        tmp_col_names = [""] + list(tmp_result['weighted avg'].keys())
+        tmp_data = []
+        for rows in tmp_result:
+            tmp_data.append([rows] + list(map(lambda x: tmp_result[rows][x], tmp_col_names[1:])))
+        return mypytable.MyPyTable(column_names=tmp_col_names, data=tmp_data).pretty_print()
+    return tmp_result
