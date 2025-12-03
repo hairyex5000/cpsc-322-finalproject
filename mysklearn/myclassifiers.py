@@ -503,7 +503,8 @@ class MyDecisionTreeClassifier:
             subtree = values[2]
 
             if instance_value == value:
-                return self._predict_subtree(subtree, instance)
+                ret = self._predict_subtree(subtree, instance)
+                return ret
 
     def fit(self, X_train, y_train):
         """Fits a decision tree classifier to X_train and y_train using the TDIDT
@@ -597,7 +598,7 @@ class MyRandomForestClassifier:
         if self.random_state is not None:
             np.random.seed(self.random_state)
 
-        for _ in range(self.N):
+        for i in range(self.N):
             x_sample, x_out, y_sample, y_out = bootstrap_sample(
                 x_train, y_train)
 
@@ -610,6 +611,7 @@ class MyRandomForestClassifier:
             # Now compute accuracy on out-of-bag samples
             y_pred = tree.predict(x_out)
             acc = accuracy_score(y_out, y_pred, labels)
+
             tree_accuracies.append(acc)
 
         # Now that the forest has been created, only keep the best M trees
@@ -630,4 +632,7 @@ class MyRandomForestClassifier:
         Returns:
             y_predicted (list of obj): The predicted target y values (parallel to X_test).
         """
-        pass
+        predictions = [tree.predict(x_test) for tree in self.trees]
+
+        # Majority vote
+        final_predictions = []
