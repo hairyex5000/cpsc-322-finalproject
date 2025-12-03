@@ -4,4 +4,5 @@ tabulate
 pylint
 seaborn
 matplotlib
-nbqa
+# nbqa
+scikit-learn # for debugging purposes only - not used to complete assignment
