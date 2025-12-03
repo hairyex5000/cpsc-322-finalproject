@@ -77,6 +77,23 @@ class MyPyTable:
 
         return out
 
+    def replace_column(self, col_identifier, new_col):
+        # Get the column as an index regardless of the arg format
+        col_index = -1
+
+        if type(col_identifier) is int:
+            # Validate
+            if col_identifier < 0 or col_identifier >= len(self.column_names):
+                raise ValueError()
+
+            col_index = col_identifier
+        else:
+            # Will raise ValueError for us
+            col_index = self.column_names.index(col_identifier)
+
+        for i in range(len(self.data)):
+            self.data[i][col_index] = new_col[i]
+
     def convert_to_numeric(self):
         """Try to convert each value in the table to a numeric type (float).
 

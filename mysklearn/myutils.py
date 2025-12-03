@@ -269,8 +269,20 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         x_test = [x_data[x] for x in test]
         y_train = [y_data[x] for x in train]
         y_test = [y_data[x] for x in test]
+
         classifier.fit(x_train, y_train)
-        y_pred += classifier.predict(x_test)
+
+        # FIXME: Temporary workaround for the issue where the test data
+        # has attribute domains that differ from the training data
+
+        preds = classifier.predict(x_test)
+
+        for i in range(len(preds) - 1, -1, -1):
+            if preds[i] is None:
+                preds.pop(i)
+                y_test.pop(i)
+
+        y_pred += preds
         y_actual += y_test
     # confusion_matrix_pretty_print(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes))
     print(
