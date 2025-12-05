@@ -122,6 +122,25 @@ def normalize_list(raw: list) -> list[float]:
     return [(v - r_min) / gap for v in raw]
 
 
+def normalize_zscore(raw: list) -> list[float]:
+    """
+    Normalizes a list of numerical values using z-score normalization.
+
+    Args:
+        raw (list): A list of numerical values to normalize.
+
+    Returns:
+        list[float]: A list of z-score normalized float values.
+
+    Notes:
+        Assumes the list has at least 2 elements, all numerical, and are not identical.
+    """
+    mean = np.mean(raw)
+    stddev = np.std(raw)
+
+    return [(v - mean) / stddev for v in raw]
+
+
 def pretty_confusion_matrix(y_true, y_pred, labels):
     """
     Print a human-readable confusion matrix for given true and predicted labels.

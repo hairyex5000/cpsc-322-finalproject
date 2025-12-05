@@ -78,6 +78,17 @@ class MyPyTable:
         return out
 
     def replace_column(self, col_identifier, new_col):
+        """Replaces a column in the table data with new values.
+
+        Parameters:
+            col_identifier (str or int): string for a column name or int
+                for a column index
+            new_col (list of obj): new column values to replace the existing column with
+
+        Raises:
+            ValueError: if col_identifier is invalid
+        """
+
         # Get the column as an index regardless of the arg format
         col_index = -1
 
