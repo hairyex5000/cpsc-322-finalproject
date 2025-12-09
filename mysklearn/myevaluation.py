@@ -240,13 +240,27 @@ def accuracy_score(y_true, y_pred, labels):
         score(float): Predictive accuracy score as a ratio in [0.0, 1.0]
 
     Notes:
-        Uses the micro approach.
+        Uses the macro approach.
         Loosely based on sklearn's accuracy_score():
             https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn.metrics.accuracy_score
     """
     matrix = np.array(confusion_matrix(y_true, y_pred, labels))
 
-    return np.diag(matrix).sum() / matrix.sum()
+    # Macro approach: calculate accuracy per class and average
+    accuracies = []
+    for i in range(len(labels)):
+        tp = matrix[i][i]
+        tn = matrix.sum() - matrix[i].sum() - matrix[:, i].sum() + matrix[i][i]
+        fp = matrix[:, i].sum() - matrix[i][i]
+        fn = matrix[i].sum() - matrix[i][i]
+
+        total = tp + tn + fp + fn
+        if total > 0:
+            accuracies.append((tp + tn) / total)
+        else:
+            accuracies.append(0)
+
+    return np.mean(accuracies)
 
 
 def precision_score(y_true, y_pred, labels):
@@ -264,18 +278,22 @@ def precision_score(y_true, y_pred, labels):
         precision(float): Precision score
 
     Notes:
-        Uses the micro approach.
+        Uses the macro approach.
     """
     matrix = np.array(confusion_matrix(y_true, y_pred, labels))
 
-    tp = np.diag(matrix).sum()
-    fp = (matrix.sum(axis=0) - np.diag(matrix)).sum()
+    # Macro approach: calculate precision per class and average
+    precisions = []
+    for i in range(len(labels)):
+        tp = matrix[i][i]
+        fp = matrix[:, i].sum() - matrix[i][i]
 
-    # Handle edge case where there are no positive predictions
-    if tp == 0 and fp == 0:
-        return 0
+        if tp + fp > 0:
+            precisions.append(tp / (tp + fp))
+        else:
+            precisions.append(0)
 
-    return tp / (tp + fp)
+    return np.mean(precisions)
 
 
 def recall_score(y_true, y_pred, labels):
@@ -293,18 +311,22 @@ def recall_score(y_true, y_pred, labels):
         recall(float): Recall score
 
     Notes:
-        Uses the micro approach.
+        Uses the macro approach.
     """
     matrix = np.array(confusion_matrix(y_true, y_pred, labels))
 
-    tp = np.diag(matrix).sum()
-    fn = (matrix.sum(axis=1) - np.diag(matrix)).sum()
+    # Macro approach: calculate recall per class and average
+    recalls = []
+    for i in range(len(labels)):
+        tp = matrix[i][i]
+        fn = matrix[i].sum() - matrix[i][i]
 
-    # Handle edge case for div by 0
-    if tp == 0 and fn == 0:
-        return 0
+        if tp + fn > 0:
+            recalls.append(tp / (tp + fn))
+        else:
+            recalls.append(0)
 
-    return tp / (tp + fn)
+    return np.mean(recalls)
 
 
 def f1_score(y_true, y_pred, labels):
@@ -322,16 +344,28 @@ def f1_score(y_true, y_pred, labels):
         f1(float): F1 score
 
     Notes:
-        Uses the micro approach.
+        Uses the macro approach.
     """
-    precision = precision_score(y_true, y_pred, labels)
-    recall = recall_score(y_true, y_pred, labels)
+    matrix = np.array(confusion_matrix(y_true, y_pred, labels))
 
-    # Handle edge case for div by 0
-    if precision == 0 and recall == 0:
-        return 0
+    # Macro approach: calculate F1 per class and average
+    f1_scores = []
+    for i in range(len(labels)):
+        tp = matrix[i][i]
+        fp = matrix[:, i].sum() - matrix[i][i]
+        fn = matrix[i].sum() - matrix[i][i]
 
-    return 2 * (precision * recall) / (precision + recall)
+        # Calculate precision and recall for this class
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
+
+        # Calculate F1 for this class
+        if precision + recall > 0:
+            f1_scores.append(2 * (precision * recall) / (precision + recall))
+        else:
+            f1_scores.append(0)
+
+    return np.mean(f1_scores)
 
 def binary_error_rate(y_true, y_pred, labels=None, pos_label=None):
     """Calculates the error rate of classifications with binary labels.
