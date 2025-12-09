@@ -1,5 +1,6 @@
 import copy
 import os
+from math import sqrt
 from mysklearn.myevaluation import confusion_matrix, classification_report, stratified_kfold_split, accuracy_score, precision_score, f1_score, recall_score
 from mysklearn.mypytable import MyPyTable
 import numpy as np
@@ -289,6 +290,8 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
     )
     y_pred, y_actual = [], []
     count = 0
+
+
     for fold in kfold:
         count += 1
         print(f'Fold #{count} started')
@@ -315,7 +318,6 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         y_actual += y_test
 
     pretty_confusion_matrix(y_actual, y_pred, possible_classes)
-    # confusion_matrix_pretty_print(copy.deepcopy(y_actual), copy.deepcopy(y_pred), copy.deepcopy(possible_classes))
     print(
         f'accuracy: {accuracy_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
     print(
@@ -326,3 +328,36 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         f'recall: {recall_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
     print(classification_report(copy.deepcopy(y_actual), copy.deepcopy(
         y_pred), copy.deepcopy(possible_classes), False))
+
+def cluster_generator(table: MyPyTable, n_centroids: int, attributes: list[str]):
+    tmp_list = [table.column_names.index(x) for x in attributes]
+    last_centroids = [{k: -1 for k in tmp_list} for x in range(n_centroids)]
+    centroids = [{k: table.data[x][k] for k in tmp_list} for x in range(n_centroids)]
+    while not all(all(abs(centroids[x][y]-last_centroids[x][y]) < 0.005 for y in tmp_list)
+              for x in range(n_centroids)):
+        last_centroids = copy.deepcopy(centroids)
+        tmp_dist = {k: [] for k in range(len(last_centroids))}
+        for row in table.data:
+            internal_dist = {k: 0 for k in range(len(last_centroids))}
+            for inx, centroid in enumerate(last_centroids):
+                tmp_sum = 0
+                for col in centroid:
+                    tmp_sum+=(row[col]-centroid[col])**2
+                tmp_sum=sqrt(tmp_sum)
+                internal_dist[inx] = tmp_sum
+            lowest_dist = sorted(list(internal_dist.keys()), key=lambda x: internal_dist[x])[0]
+            tmp = {}
+            for col in last_centroids[lowest_dist]:
+                tmp[col] = row[col]
+            tmp_dist[lowest_dist].append(tmp)
+        for key in tmp_dist:
+            if len(tmp_dist[key]) == 0:
+                return False
+            tmp_counts = {k: 0 for k in tmp_dist[key][0]}
+            for row in tmp_dist[key]:
+                for col in row:
+                    tmp_counts[col]+=row[col]
+            for col in tmp_counts:
+                tmp_counts[col]/=len(tmp_dist[key])
+            centroids[key] = copy.deepcopy(tmp_counts)
+    return centroids

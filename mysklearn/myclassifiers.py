@@ -1,5 +1,8 @@
+from math import sqrt
+from copy import deepcopy
 import numpy as np
-from mysklearn.myutils import euclidean_distance, compute_random_subset
+from mysklearn.mypytable import MyPyTable
+from mysklearn.myutils import euclidean_distance, compute_random_subset, cluster_generator
 from mysklearn.myevaluation import bootstrap_sample, accuracy_score
 
 
@@ -642,3 +645,78 @@ class MyRandomForestClassifier:
             final_predictions.append(max(set(votes), key=votes.count))
 
         return final_predictions
+
+class MyClusteredRandomForestClassifier(MyRandomForestClassifier):
+    """Represents a random forest classifier that clusters input data.
+
+    Attributes:
+        trees(list of MyDecisionTreeClassifier): The list of decision trees in the forest.
+        N (int): The number of trees in the forest.
+        M (int): The number of trees to use when making predictions.
+        F (int): The number of features to randomly select during fitting.
+        C (int): The number of clusters to use for each feature.
+        random_state(int): The seed for the random number generator.
+    """
+
+    def __init__(self, N, M, F, C, random_state=None):
+        """Initializes the random forest classifier.
+
+        Args:
+            N (int): The number of trees in the forest.
+            M (int): The number of trees to use when making predictions.
+            F (int): The number of features to randomly select during fitting.
+            C (int): The number of clusters to use for each feature.
+            random_state(int or None): The seed for the random number generator.
+        """
+        self.trees: list[MyDecisionTreeClassifier] = []
+        self.N = N
+        self.M = M
+        self.F = F
+        self.C = C
+        self.random_state = random_state
+
+    def fit(self, x_train, y_train):
+        """Fits a random forest classifier.
+
+        Args:
+            x_train (list of list of obj): The training instances.
+            y_train (list of obj): The target y values.
+        """
+
+        tmp_x_train = deepcopy(x_train)
+        self.clusters = []
+        for col in range(len(x_train[0])):
+            tmp_cluster = cluster_generator(
+                MyPyTable(
+                    [0],
+                    [[row[col]] for row in x_train]
+                ),
+                self.C,
+                [0]
+            )
+            self.clusters.append([x[0] for x in tmp_cluster] if tmp_cluster else False)
+            if tmp_cluster:
+                for inx, row in enumerate(x_train):
+                    tmp_dist = {k: abs(row[col]-self.clusters[col][k]) for k in range(self.C)}
+                    tmp_x_train[inx][col] = sorted(list(tmp_dist.keys()), key=lambda x: tmp_dist[x])[0]
+
+        super().fit(tmp_x_train, y_train)
+
+    def predict(self, x_test):
+        """Makes predictions for test instances in X_test.
+
+        Args:
+            x_test (list of list of obj): The list of testing samples.
+
+        Returns:
+            y_predicted (list of obj): The predicted target y values (parallel to X_test).
+        """
+
+        tmp_x_test = deepcopy(x_test)
+        for col in range(len(x_test[0])):
+            if self.clusters[col] != False:
+                for inx, row in enumerate(x_test):
+                    tmp_dist = {k: abs(row[col]-self.clusters[col][k]) for k in range(self.C)}
+                    tmp_x_test[inx][col] = sorted(list(tmp_dist.keys()), key=lambda x: tmp_dist[x])[0]
+
+        return super().predict(tmp_x_test)
