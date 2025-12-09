@@ -7,7 +7,7 @@ import numpy as np
 from tabulate import tabulate
 from mysklearn import myevaluation
 from mysklearn.mypytable import MyPyTable
-
+from joblib import Parallel, delayed
 
 def randomize_in_place(alist, parallel_list=None):
     """
@@ -292,9 +292,7 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
     count = 0
 
 
-    for fold in kfold:
-        count += 1
-        print(f'Fold #{count} started')
+    def fold_processor(fold):
         train = fold[0]
         test = fold[1]
         x_train = [x_data[x] for x in train]
@@ -314,8 +312,15 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
                 preds.pop(i)
                 y_test.pop(i)
 
-        y_pred += preds
-        y_actual += y_test
+        return preds, y_test
+
+    results = Parallel(n_jobs=-1)(
+        delayed(fold_processor)(fold) for fold in kfold
+    )
+
+    for result in results:
+        y_pred+=result[0]
+        y_actual+=result[1]
 
     pretty_confusion_matrix(y_actual, y_pred, possible_classes)
     print(
@@ -326,8 +331,8 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         f'f1 score: {f1_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
     print(
         f'recall: {recall_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
-    print(classification_report(copy.deepcopy(y_actual), copy.deepcopy(
-        y_pred), copy.deepcopy(possible_classes), False))
+    classification_report(copy.deepcopy(y_actual), copy.deepcopy(
+        y_pred), copy.deepcopy(possible_classes), False)
 
 def cluster_generator(table: MyPyTable, n_centroids: int, attributes: list[str]):
     tmp_list = [table.column_names.index(x) for x in attributes]

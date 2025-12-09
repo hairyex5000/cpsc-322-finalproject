@@ -6,3 +6,5 @@ seaborn
 matplotlib
 # nbqa
 scikit-learn # for debugging purposes only - not used to complete assignment
+joblib
+tqdm
