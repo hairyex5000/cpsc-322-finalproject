@@ -6,4 +6,4 @@ Fall 2025
 Section 02
 
 ## Setup
-Initialize your virtual environment and then use `pip install -r requirements.txt` to install all required packages.
+Initialize your virtual environment with Python 3.10 or later and then use `pip install -r requirements.txt` to install all required packages.

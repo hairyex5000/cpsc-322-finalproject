@@ -323,6 +323,7 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         y_actual+=result[1]
 
     pretty_confusion_matrix(y_actual, y_pred, possible_classes)
+    print("Overall Results:")
     print(
         f'accuracy: {accuracy_score(y_actual, y_pred, copy.deepcopy(possible_classes))}')
     print(
@@ -335,6 +336,17 @@ def stratified_kfold_tester(classifier, table: MyPyTable, class_header, possible
         y_pred), copy.deepcopy(possible_classes), False)
 
 def cluster_generator(table: MyPyTable, n_centroids: int, attributes: list[str]):
+    """Gets centroids for a data table and selected features.
+
+    Args:
+        table(MyPyTable): the table to peform the clustering on.
+        n_centroids(int): The number of centroids to create.
+        attributes(list of str): the features to get the centroids of.
+
+    Returns:
+        list of dict of int: List of dicts that repersent the centroid for each feature
+        requested to be included.
+    """
     tmp_list = [table.column_names.index(x) for x in attributes]
     last_centroids = [{k: -1 for k in tmp_list} for x in range(n_centroids)]
     centroids = [{k: table.data[x][k] for k in tmp_list} for x in range(n_centroids)]
