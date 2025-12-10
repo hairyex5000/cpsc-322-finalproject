@@ -333,7 +333,7 @@ class MyDecisionTreeClassifier:
                 for c in probs.keys():
                     probs[c] /= len(subset)
 
-                entropy += -sum(p * np.log2(p) for p in probs.values()) * \
+                entropy += -sum(p * np.log2(p) for p in probs.values() if p > 0) * \
                     (len(subset) / len(instances))
 
             att_entropies.append(entropy)
@@ -646,6 +646,7 @@ class MyRandomForestClassifier:
 
         return final_predictions
 
+
 class MyClusteredRandomForestClassifier(MyRandomForestClassifier):
     """Represents a random forest classifier that clusters input data.
 
@@ -694,11 +695,14 @@ class MyClusteredRandomForestClassifier(MyRandomForestClassifier):
                 self.C,
                 [0]
             )
-            self.clusters.append([x[0] for x in tmp_cluster] if tmp_cluster else False)
+            self.clusters.append([x[0] for x in tmp_cluster]
+                                 if tmp_cluster else False)
             if tmp_cluster:
                 for inx, row in enumerate(x_train):
-                    tmp_dist = {k: abs(row[col]-self.clusters[col][k]) for k in range(self.C)}
-                    tmp_x_train[inx][col] = sorted(list(tmp_dist.keys()), key=lambda x: tmp_dist[x])[0]
+                    tmp_dist = {k: abs(row[col]-self.clusters[col][k])
+                                for k in range(self.C)}
+                    tmp_x_train[inx][col] = sorted(
+                        list(tmp_dist.keys()), key=lambda x: tmp_dist[x])[0]
 
         super().fit(tmp_x_train, y_train)
 
@@ -716,7 +720,9 @@ class MyClusteredRandomForestClassifier(MyRandomForestClassifier):
         for col in range(len(x_test[0])):
             if self.clusters[col] != False:
                 for inx, row in enumerate(x_test):
-                    tmp_dist = {k: abs(row[col]-self.clusters[col][k]) for k in range(self.C)}
-                    tmp_x_test[inx][col] = sorted(list(tmp_dist.keys()), key=lambda x: tmp_dist[x])[0]
+                    tmp_dist = {k: abs(row[col]-self.clusters[col][k])
+                                for k in range(self.C)}
+                    tmp_x_test[inx][col] = sorted(
+                        list(tmp_dist.keys()), key=lambda x: tmp_dist[x])[0]
 
         return super().predict(tmp_x_test)
